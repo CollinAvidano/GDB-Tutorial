@@ -1,0 +1,125 @@
+GDB Tutorial
+
+Intro
+In this micro-project, you will explore the basic features of the GNU Debugger, or gdb. You are not expected to have any previous experience with using gdb or similar debuggers, just follow the guide and have fun! :-)
+
+Expectations
+The following guide will help you get familar with some basic gdb features including
+    - running a program in gdb,
+    - setting break points,
+    - examining the current register file,
+    - examining the stack.
+You must do this project INDIVIDUALLY, any form of collaboration is not allowed(the questions are open-ended and there are many versions of correct answers).
+
+Preparation
+0. Please make sure you are using a x86 or i686 or x86_64(a.k.a. amd64) or ARM machine. It's definitely cool if you want to try this on your rpi, though this guide is tested with x86 only...
+1. Please download and install a 32-bit Linux distro on your computer or virtual machine.
+2. Please install gdb and gcc if your distro does not have it pre-installed.
+3. Make sure you have a up-to-date glibc installed in your OS (i.e. 2.1x or 2.2x).
+
+Part 1
+We have provided you a simple Makefile to help you compile your code for each part of the tutorial. Please make sure you understand what it does before proceeding. You are free to modify it later if necessary.
+
+Question 1. What does the "-g" flag do in a gcc command?
+
+Now take a look at gdb_example1.c, make sure you understand what it does. You can compile the first example program by doing
+    $ make part1
+If the compilation was successful, run the program, you should see a segfault by now. Run
+    $ dmesg | tail -1
+What information can you get from dmesg, are there enough information to debug our program?
+Let's run our program in gdb, you can do this by typing
+    $ gdb <path/to/>gdb_example1
+in your shell. Now if your program takes in any arguments, it is a good time to set them by doing
+    (gdb) set args <args...>
+Our main() takes in nothing, so there's no need to do so now. Simply type
+    (gdb) run
+to make your program run in gdb. You should see something like this:
+
+Starting program: /home/wxin/gdb-tutorial/hw2_release/gdb_example1 
+Khoor/#zruog1
+
+Program received signal SIGSEGV, Segmentation fault.
+0x0804842c in print_scrambled (message=0x0) at gdb_example1.c:7
+7       printf("%c", (*message)+i);
+
+Now, let's print out a backtrace of our program flow, it's a very simple
+    (gdb) where
+    (gdb) where full
+or
+    (gdb) backtrace
+    (gdb) backtrace full
+The "full" essentially shows you more information regarding each function call, like local variables. To get a better reading on the argument of the current function, you can do
+    (gdb) info args
+Similarly we also have
+    (gdb) info stack
+    (gdb) info register
+
+Question 2. What is the value of the char* argument that was last passed into print_scrambled()? Based on such information, what caused the segfault?
+
+Question 3. What is your address of the stack pointer and frame pointer before the segfault? Based on that can you figure out the address where the argument (char*) is stored on stack before the segfault?
+(Hint: a general way to print a value at a certain memory address is
+    (gdb) x/nfu
+where n is the number of units (e.g. 4), f is the format (e.g. 'x' for hex), u is the unit (e.g. 'w' for 32-bit word).
+)
+
+Finally, change ONLY the print_scrambled() to make the program print good_message and silently ignore bad_message.
+
+Part 2.
+Take a look at gdb_example2.c before you proceed. Compile gdb_example2.c using the following command, take a look at the compiler warnings and move on.
+    $ make part2-mem-protection
+Run gdb_example2, as you've probably guessed, there's another segfault! If you were able to follow and understand part 1, you should be able to answer the following questions very quickly.
+    
+Question 4. In which function did the segfault happen? Which line in the file caused the segfault? Who is the caller of this function? What is the PC address when the segfault happened?
+
+Fix this minor bug, do the following commands:
+    $ make clean
+    $ make part2
+
+Let's move on to the next topic: breakpoints.
+The syntax to set breakpoints in gdb is fairly simple, for example:
+    (gdb) break 20
+will set a break point at line 20 on gdb_example2.c. However this syntax is sloppy when there are multiple files, in which case you should do
+    (gdb) break gdb_example2.c:20
+Or you can specify the address of the instruction directly:
+    (gdb) break *0xdeadbeef
+Or use the function name:
+    (gdb) break memset
+Let's put our newly learned knowledge to use! Say, we want to know where memset() is linked in our address space. Another powerful tool that might be of help is the step command.
+    (gdb) step <n>
+
+Question 5. Where in memory is memset() linked in our address space? Show us how you figured it out. Also take a look at the memory mapping for this process in your proc file system, what did you find (pay attention to the permission part too)?
+(hint:
+1. A quick way to find out the pid of the process running inside gdb, use
+    (gdb) info proc
+2. Take a look at /proc/<pid>/maps.
+)
+
+Question 6. In gdb, using only what we learned, What are the first 5 instructions in memset() on your machine? As a syscall, does memset() use a different stack (e.g. kernel stack)than the user stack? Show us how you figured it out. Please don't copy and paste from the library, we're trying to learn gdb here :)
+(hint: 
+1. 'i' is the display format for instruction
+2. To refer to a register value, use $<reg_name>
+)
+
+Continue the program execution by doing
+    (gdb) continue
+You may want to clear the break points before doing so.
+    (gdb) info breakpoints
+    (gdb) delete <no>
+    (gdb) clear
+should be helpful.
+
+Fix all bugs in gdb_example2.c without changing its functionality, using gdb when necessary. Then answer the following question.
+
+Question 7. Why can't the backtrace work correctly in this case? Answer briefly.
+
+This concludes the tutorial. Before proceeding to part 3, please put all your answers into micro-project2.txt.
+
+Part 3.
+Compile buggyBST.c and ignore all warnings for the sake of this exercise - use gdb to quickly find all
+of the errors. Make any changes to the line required to fix the segfault. Hint: Most of the errors can be
+fixed by one character changes - they should seem like you are fixing a typo.
+
+Other useful gdb commands:
+    (gdb) watch <variable> 
+    (gdb) rwatch <variable>
+    (gdb) next (note it's difference with step)
